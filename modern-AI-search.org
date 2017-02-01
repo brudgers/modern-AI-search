@@ -1,0 +1,159 @@
+#+TITLE: Modern AI Search
+* INTRODUCTION
+This code is based on /Artificial Intelligence: A Modern Approach/ (first edition), Chapter 3. It attempts to implement the generalized search structure and to modularize the six forms of search.
+
++ Breadth First Search
++ Uniform Cost Search
++ Depth First Search
++ Depth Limited Search
++ Iterative Deepening Search
++ Bidirectional Search
+
+The primary goal of this exercise is to develop feeling for the overall AI environment by working from the pseudo-code and abstractions into a concrete example.
+* BACKGROUND
+This is information from Chapter 2.
+** TODO ENVIRONMENT 
+This is still a big mess. Before I can really write the environment, I need a clear understanding of the agent syntax
+#+BEGIN_EXAMPLE lisp :tangle no :session no :results none
+  (defun run-environment (state update-fn agents (termination nil))
+    (loop for agent in agents
+         do (agent ((agent 'get-precept) state))))
+#+END_EXAMPLE
+** TODO Agent
+The difficulty with the structure of an agent is that it needs a function that obtains a precept and another function that extracts information from that precept.
+
+The question I guess is whether or not the entire =world-state= should be passed as the precept irrespective of what portions of it the agent understands, or whether the agent should create a function that acts on the world state and produces the precept.
+
+Obviously, once this has been written down, it is clear that the two ideas are equivalent except that one is more complicated...i.e. it creates a sensor or probe that goes out and looks at the world and in the other case the entire world comes in and features are extracted.
+
+In a sense, the difference is Heisenbergian. With the probe, the world-state becomes the former world-state + the probe and therefore is changed by the agent's act of perceiving. The alternative is the agent is potentially omnicient and the world must trust the agent to not act outside it's design parameters. Of course, the agent could also modify its probe, so the cheating is all around.
+
+Ultimately, I will start with the agent taking in the entire world as precept and extracting the features internally since that seems easier.
+#+NAME: generic-problem-solving-agent
+#+BEGIN_SRC lisp :tangle yes :session no :results none
+
+  (defun make-agent (state
+                     state-update-rules
+                     condition-action-rules
+                     get-precept)
+    (lambda (precept)
+      (if (eq precept 'get-precept)
+          (lambda (state)
+            (get-precept state))
+          (progn
+            (loop for rule in state-update-rules
+               do (setf state (rule precept state)))
+            (loop for action in condintion-action rules
+               do (let ((act (action precept)))
+                    (if act)
+                    act))))))
+#+END_SRC
+* SEARCH AGENT SETUP
+** Development Environment
+#+NAME: header
+#+BEGIN_SRC lisp :tangle yes :session no :results no
+  (defpackage :agents-search
+    (:use :cl))
+  (in-package agents-search)
+#+END_SRC
+
+#+RESULTS: header
+: #<PACKAGE "AGENTS-SEARCH">
+
+#+BEGIN_SRC lisp :session yes :results no :tangle yes
+  (defun stub-a-to-a (a)
+      "A place holder for wished-for functions where the return type is the same as the input type."
+      a)
+
+  (defun stub-a-to-nil (a)
+    "A place holder for wished-for functions where the return type may be different from the input."
+    nil)
+#+END_SRC
+** Problem
+A problem has a *state space*:
++ An initial state that the agent knows itself to be in.
++ The Set of possible actions or *operators* or *successor functions*.
++ An /implied/ set of paths which may be infinite.
++ A goal test
++ A path cost function
+#+NAME: problem 
+#+BEGIN_SRC lisp :tangle yes :session yes
+  (defstruct problem
+    (initial-state nil)
+    (operators nil)
+    (goal-test nil)
+    (path-cost-function nil))
+#+END_SRC
+
+#+RESULTS:
+: PROBLEM
+
+** Nodes
+The data structure for a search tree is the =node=. It has five properties:
++ The state of the search space to which the node corresponds
++ The node in the search tree that generated the node
++ The operator that was applied to generate the node
++ The number of nodes in the path from the root to the node (depth)
++ The path cost of the path from initial state to the node
+  
+One additional property is that a node stores the state of the search space not the state of the world.
+
+#+NAME: node
+#+BEGIN_SRC lisp :tangle yes :session yes :results no
+  (defstruct node
+    "Node stores information about its provenance in addition to the state of the search space. It is also important to realize that the node reflects the search space, not the world."
+    (search-space-state nil)
+    (parent nil)
+    (operator-applied nil)
+    (path-length nil)
+    (path-cost nil))
+#+END_SRC
+
+#+RESULTS: node
+: NODE
+** TODO Expand
+Expand is the function for generating new nodes. It is responsible for generating each of the properties of each new node.
+#+BEGIN_EXAMPLE
+  expand(NODE) => List(NODE)
+#+END_EXAMPLE
+The function =expand= will be specific to each search strategy because the transformation of the input node to the output node will require five functions (one for each node property) currently these are stubbed.
+#+BEGIN_SRC lisp :tangle yes :results no :session yes  :TODO
+  (defun expand (node)
+    (make-node
+     :search-space-state (stub-a-to-a (node-search-space-state node))
+     :parent (stub-a-to-a (node-parent node))
+     :operator-applied (stub-a-to-a (node-operator-applied node))
+     :path-length (stub-a-to-a (node-path-length node))
+     :path-cost (stub-a-to-a (node-path-cost node)))))
+#+END_SRC
+
+#+RESULTS:
+: EXPAND
+
+The list of nodes generated by =expand= is called the /fringe/ or /frontier/
+
+* TODO SEARCH AGENT MAIN
+#+NAME: agent-search
+#+BEGIN_EXAMPLE: 
+<<header>>
+<<problem>>
+<<node>>
+#+END_EXAMPLE 
+* APPENDIX
+** Build
+1. The web page for this file is =index.html=. It is structured to work with Github pages.
+2. To generate these files, navigate into the source block and use =M-x org-babel-execute-src-block=. 
+#+NAME: generate-files
+#+BEGIN_SRC elisp 
+  ;; label for search: qqz
+  ;; generate {filename without .org}.lisp
+  (org-babel-tangle)
+  ;; generate docs/index.html
+  (org-html-export-as-html)
+  (save-current-buffer
+    (set-buffer "*Org HTML Export*")
+    (write-file "index.html")
+    (kill-buffer))
+  ;; (concat "Files Generated: " (current-time-string))
+#+END_SRC 
+
