@@ -1,5 +1,5 @@
 ** Literate Programming
-This project uses literate programming and the annotated source code is availabe as a Github Page: https://brudgers.github.io/general-problem-solver/.
+This project uses literate programming and the annotated source code is availabe as a Github Page: https://brudgers.github.io/modern-AI-search/.
 
 ** Purpose
 This document reflects several of my ongoing projects:
